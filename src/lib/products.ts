@@ -13,7 +13,7 @@ export type Product = {
   flavors: Flavor[];
 };
 
-export const SHOPEE_STORE = "https://shopee.ph/blackpanther349";
+export const SHOPEE_STORE = "https://shopee.ph/blackpanther12#product_list";
 
 const SHOPEE = "https://shopee.ph/product/1896790461";
 
@@ -348,13 +348,10 @@ const unlisted: Product[] = [
   pending("x-ultra-prime", "X-Ultra Prime", "Prefilled Pods", "x-ultra-a", 430, ["Purple - Purple Mist"]),
   pending("x-slimbar-pod", "X-Slimbar Pod", "Prefilled Pods", "x-vape-other", 430, ["Yellow - Yellow Tropic"]),
   pending("x-aero", "X-Aero", "Disposables", "x-aero", 580, ["Yellow - Yellow Freeze"]),
-  pending("black-elite", "Black Elite", "Prefilled Pods", "black-elite", 0, ["Yellow - Very More"]),
   pending("chillax-infinite", "Chillax Infinite Pod", "Prefilled Pods", "chillax-infinite", 450, ["Green - Summer Craze"]),
   pending("kaizer-clear-pod", "Kaizer Pods", "Prefilled Pods", "kaizer-b", 500, ["Purple - Nrgy Gem"]),
   pending("kaizer-clear", "Kaizer Battery", "Pod Systems", "kaizer-a", 350),
   pending("x-slimbar", "X-Slimbar Device", "Pod Systems", "x-slimbar", 0, ["Black - Space Gray"]),
-  pending("vanguard-go", "Vanguard Go x 2.0", "Pod Systems", "vanguard-go", 0),
-  pending("vanguard-refillable-pod", "Vanguard Refillable Pod 2ml", "Cartridges", "vanguard-pods", 0),
   pending("oxva-nexlim-cartridge", "OXVA NeXlim Cartridge", "Cartridges", "nexlim-cartridge", 260),
   pending("oxva-xlim-cartridge", "OXVA Xlim Cartridge", "Cartridges", "oxva-xlim-cartridge", 260),
   pending("the-cloner", "The Cloner Juice", "E-Liquids", "the-cloner", 450, ["Red - Strawberry RY4"]),
