@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# product image pipeline intermediates
+/assets/norm
+/assets/cut
+
+# raw product photos (large originals; processed images live in public/products)
+/Products
+
+# local tool settings
+/.claude
