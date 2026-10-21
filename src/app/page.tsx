@@ -32,6 +32,7 @@ import {
 import { InstagramIcon, MessengerIcon } from "@/components/BrandIcons";
 import { SocialLinks } from "@/components/SocialLinks";
 import { ContactForm } from "@/components/ContactForm";
+import { ChatWidget } from "@/components/ChatWidget";
 
 const muted = (pct: number) => `color-mix(in srgb, var(--color-text) ${pct}%, transparent)`;
 const container: CSSProperties = {
@@ -989,6 +990,7 @@ export default function Home() {
         </p>
       </footer>
 
+      <ChatWidget />
       <AgeGate />
       <Motion />
     </div>
