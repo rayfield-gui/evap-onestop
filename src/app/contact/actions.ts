@@ -2,6 +2,8 @@
 
 import { INTERESTS, type ContactState } from "@/lib/contact";
 import { isValidPhone, submitLead, type LeadInterest } from "@/lib/leads";
+import { notifyAdmin } from "@/lib/telegram/bot";
+import { BOTS, botToken } from "@/lib/telegram/brands";
 
 export async function submitContact(_prev: ContactState, formData: FormData): Promise<ContactState> {
   const values = {
@@ -27,6 +29,18 @@ export async function submitContact(_prev: ContactState, formData: FormData): Pr
       error: "We couldn't send your details right now. Please try again, or message us on Telegram.",
       values,
     };
+  }
+
+  const bot = BOTS.phanter;
+  const token = botToken(bot);
+  if (token) {
+    await notifyAdmin(bot, token, {
+      interest: interest!.label,
+      name: values.name,
+      contact: values.phone,
+      page: values.page,
+      source: "Website form",
+    }).catch(() => {});
   }
 
   return { success: { interest: interest!.slug } };

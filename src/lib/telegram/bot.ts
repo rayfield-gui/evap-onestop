@@ -6,6 +6,8 @@ export type BrandBot = {
   name: string;
   emoji: string;
   tokenEnv: string;
+  // Telegram chat ID that receives new-application alerts (get it by sending /myid to the bot).
+  adminChatId?: number;
   links: {
     srp: string;
     wholesale: string;
@@ -192,6 +194,35 @@ async function showSection(token: string, b: BrandBot, msg: TgMessage, section: 
   return editText(token, msg, menuText(b), menuKeyboard(b));
 }
 
+export type LeadAlert = {
+  interest: string;
+  name: string;
+  contact: string;
+  page: string;
+  telegram?: string;
+  source: "Telegram bot" | "Website form";
+};
+
+// Sends a new-lead alert to the brand admin's Telegram. Silently skipped when not configured.
+export async function notifyAdmin(b: BrandBot, token: string, lead: LeadAlert) {
+  if (!b.adminChatId) return;
+  const lines = [
+    `🆕 <b>New ${esc(lead.interest)} application — ${esc(b.name.toUpperCase())}</b>`,
+    ``,
+    `👤 ${esc(lead.name)}`,
+    `📞 ${esc(lead.contact)}`,
+  ];
+  if (lead.telegram) lines.push(`💬 ${esc(lead.telegram)}`);
+  if (lead.page) lines.push(`🔗 ${esc(lead.page)}`);
+  lines.push(``, `<i>Source: ${lead.source}</i>`);
+  await tg(token, "sendMessage", {
+    chat_id: b.adminChatId,
+    text: lines.join("\n"),
+    parse_mode: "HTML",
+    disable_web_page_preview: true,
+  });
+}
+
 export async function handleUpdate(b: BrandBot, token: string, update: TgUpdate) {
   const cb = update.callback_query;
   if (cb?.message) {
@@ -210,6 +241,10 @@ export async function handleUpdate(b: BrandBot, token: string, update: TgUpdate)
   const msg = update.message;
   if (!msg?.text || msg.chat.type !== "private") return;
   const text = msg.text.trim();
+
+  if (text === "/myid") {
+    return sendText(token, msg.chat.id, `Your chat ID is <code>${msg.chat.id}</code>`);
+  }
 
   const replyTo = msg.reply_to_message?.text;
   const state = replyTo ? parseStep(replyTo) : null;
@@ -240,6 +275,14 @@ export async function handleUpdate(b: BrandBot, token: string, update: TgUpdate)
           [[{ text: "💬 Message our team", url: b.links.team }], [back]],
         );
       }
+      await notifyAdmin(b, token, {
+        interest: kind === "wholesale" ? "Wholesale" : "Retail & Affiliate",
+        name: state.name ?? "",
+        contact: contact,
+        page,
+        telegram: handle,
+        source: "Telegram bot",
+      }).catch(() => {});
       const link = kind === "wholesale" ? b.links.wholesale : b.links.retail;
       return sendText(
         token,
