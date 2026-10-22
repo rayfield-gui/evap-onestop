@@ -7,6 +7,7 @@ export const BOTS: Record<string, BrandBot> = {
     name: "Phanter",
     emoji: "🐆",
     tokenEnv: "TELEGRAM_BOT_TOKEN_PHANTER",
+    adminChatId: 8654100792, // @PhanterSociety
     links: {
       srp: "https://t.me/+sxM3yQ5wq9dhZjBl",
       wholesale: "https://t.me/+7l8h2vyJ6cMxOTll",
