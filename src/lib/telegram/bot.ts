@@ -5,6 +5,9 @@ export type BrandBot = {
   slug: string;
   name: string;
   emoji: string;
+  heart: string;
+  // First line of the 21+ check, e.g. "Welcome to The Luxora Court."
+  welcome: string;
   tokenEnv: string;
   // Telegram chat ID that receives new-application alerts (get it by sending /myid to the bot).
   adminChatId?: number;
@@ -12,8 +15,9 @@ export type BrandBot = {
     srp: string;
     wholesale: string;
     retail: string;
-    shopee: string;
-    website: string;
+    // Optional until the brand has its own Shopee store or website; the buttons are hidden without them.
+    shopee?: string;
+    website?: string;
     team: string;
   };
 };
@@ -75,14 +79,14 @@ export async function tg(token: string, method: string, payload: Record<string, 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 function menuKeyboard(b: BrandBot): Keyboard {
+  const shop: Button[] = [];
+  if (b.links.shopee) shop.push({ text: "🛒 Shop on Shopee", url: b.links.shopee });
+  if (b.links.website) shop.push({ text: "🌐 Website", url: b.links.website });
   return [
     [{ text: "🏷️ SRP – price list", callback_data: "srp" }],
     [{ text: "📦 Wholesale", callback_data: "apply:wholesale" }],
     [{ text: "🛍️ Retail & Affiliate", callback_data: "apply:retail" }],
-    [
-      { text: "🛒 Shop on Shopee", url: b.links.shopee },
-      { text: "🌐 Website", url: b.links.website },
-    ],
+    ...(shop.length ? [shop] : []),
     [{ text: "💬 Talk to our team", url: b.links.team }],
   ];
 }
@@ -91,11 +95,11 @@ const back: Button = { text: "⬅️ Back to menu", callback_data: "menu" };
 
 function menuText(b: BrandBot) {
   return [
-    `You're in. 🖤`,
+    `You're in. ${b.heart}`,
     ``,
     `Tell me what you're here for and I'll point you to the right room:`,
     ``,
-    `🏷️ <b>SRP</b> – our price list, then shop on Shopee`,
+    `🏷️ <b>SRP</b> – our price list${b.links.shopee ? ", then shop on Shopee" : ""}`,
     `📦 <b>Wholesale</b> – bulk prices and stock lists <i>(quick application)</i>`,
     `🛍️ <b>Retail &amp; Affiliate</b> – resell or earn with ${esc(b.name)} <i>(quick application)</i>`,
   ].join("\n");
@@ -103,7 +107,7 @@ function menuText(b: BrandBot) {
 
 function ageText(b: BrandBot) {
   return [
-    `${b.emoji} <b>Good evening, and welcome to The ${esc(b.name)} Society.</b>`,
+    `${b.emoji} <b>${esc(b.welcome)}</b>`,
     ``,
     `Before we let you in, one quick question:`,
     `are you <b>21 years old or above</b>?`,
@@ -169,6 +173,9 @@ function parseStep(text: string): { kind: Kind; step: number; name?: string; pho
 
 async function showSection(token: string, b: BrandBot, msg: TgMessage, section: string) {
   if (section === "srp") {
+    const keyboard: Keyboard = [[{ text: "🏷️ Join SRP channel", url: b.links.srp }]];
+    if (b.links.shopee) keyboard.push([{ text: "🛒 Shop on Shopee", url: b.links.shopee }]);
+    keyboard.push([back]);
     return editText(
       token,
       msg,
@@ -176,9 +183,11 @@ async function showSection(token: string, b: BrandBot, msg: TgMessage, section: 
         `🏷️ <b>${esc(b.name)} SRP</b>`,
         ``,
         `Our official suggested retail prices for every product and flavor.`,
-        `Join the channel for the latest price list, then order on our Shopee store.`,
+        b.links.shopee
+          ? `Join the channel for the latest price list, then order on our Shopee store.`
+          : `Join the channel for the latest price list and how to order.`,
       ].join("\n"),
-      [[{ text: "🏷️ Join SRP channel", url: b.links.srp }], [{ text: "🛒 Shop on Shopee", url: b.links.shopee }], [back]],
+      keyboard,
     );
   }
   if (section === "apply:wholesale" || section === "apply:retail") {
@@ -266,7 +275,7 @@ export async function handleUpdate(b: BrandBot, token: string, update: TgUpdate)
       const handle = msg.from?.username ? `@${msg.from.username}` : "";
       const contact = state.phone ?? "";
       const phone = handle && contact.toLowerCase() !== handle.toLowerCase() ? `${contact} (TG ${handle})` : contact;
-      const ok = await submitLead({ name: state.name ?? "", phone, page, interest: KINDS[kind].interest });
+      const ok = await submitLead({ brand: b.name, name: state.name ?? "", phone, page, interest: KINDS[kind].interest });
       if (!ok) {
         return sendText(
           token,

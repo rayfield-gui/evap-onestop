@@ -23,7 +23,7 @@ export async function submitContact(_prev: ContactState, formData: FormData): Pr
   if (!interest) fieldErrors.interest = "Choose what you're interested in.";
   if (Object.keys(fieldErrors).length) return { fieldErrors, values };
 
-  const ok = await submitLead({ ...values, interest: interest!.value as LeadInterest });
+  const ok = await submitLead({ ...values, brand: "Phanter", interest: interest!.value as LeadInterest });
   if (!ok) {
     return {
       error: "We couldn't send your details right now. Please try again, or message us on Telegram.",

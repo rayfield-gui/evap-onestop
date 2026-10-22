@@ -13,7 +13,7 @@ const FIELDS = {
 // Must match the Google Form options exactly, including its spelling.
 export type LeadInterest = "Retail" | "Wholesale" | "Reseller/Affliates";
 
-export type Lead = { name: string; phone: string; page: string; interest: LeadInterest };
+export type Lead = { brand: string; name: string; phone: string; page: string; interest: LeadInterest };
 
 export const PH_MOBILE = /^(\+?63|0)9\d{9}$/;
 
@@ -23,7 +23,8 @@ export function isValidPhone(phone: string) {
 
 export async function submitLead(lead: Lead): Promise<boolean> {
   const body = new URLSearchParams({
-    [FIELDS.name]: lead.name.slice(0, 200),
+    // The form has no Brand question yet, so the brand is tagged onto the name, e.g. "[LUXORA] Juan".
+    [FIELDS.name]: `[${lead.brand.toUpperCase()}] ${lead.name}`.slice(0, 200),
     [FIELDS.phone]: lead.phone.slice(0, 80),
     [FIELDS.page]: lead.page.slice(0, 500),
     [FIELDS.interest]: lead.interest,
