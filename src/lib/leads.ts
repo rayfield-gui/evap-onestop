@@ -24,7 +24,7 @@ export function isValidPhone(phone: string) {
 export async function submitLead(lead: Lead): Promise<boolean> {
   const body = new URLSearchParams({
     [FIELDS.name]: lead.name.slice(0, 200),
-    [FIELDS.phone]: lead.phone.slice(0, 40),
+    [FIELDS.phone]: lead.phone.slice(0, 80),
     [FIELDS.page]: lead.page.slice(0, 500),
     [FIELDS.interest]: lead.interest,
   });

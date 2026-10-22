@@ -12,7 +12,7 @@ export type BrandBot = {
     retail: string;
     shopee: string;
     website: string;
-    messenger: string;
+    team: string;
   };
 };
 
@@ -36,7 +36,16 @@ const KINDS: Record<Kind, { title: string; interest: LeadInterest; channelLabel:
 type Button = { text: string; callback_data?: string; url?: string };
 type Keyboard = Button[][];
 
-type TgUser = { first_name?: string };
+type TgUser = { first_name?: string; username?: string };
+
+const TG_USERNAME = /^@?[A-Za-z][A-Za-z0-9_]{4,31}$/;
+
+// Accepts a PH mobile number or a Telegram username; returns the cleaned value or null.
+function parseContact(input: string): string | null {
+  if (isValidPhone(input)) return input;
+  if (TG_USERNAME.test(input)) return input.startsWith("@") ? input : `@${input}`;
+  return null;
+}
 type TgMessage = {
   message_id: number;
   chat: { id: number; type: string };
@@ -72,7 +81,7 @@ function menuKeyboard(b: BrandBot): Keyboard {
       { text: "🛒 Shop on Shopee", url: b.links.shopee },
       { text: "🌐 Website", url: b.links.website },
     ],
-    [{ text: "💬 Talk to our team", url: b.links.messenger }],
+    [{ text: "💬 Talk to our team", url: b.links.team }],
   ];
 }
 
@@ -134,10 +143,10 @@ function askStep(token: string, chatId: number, kind: Kind, step: 1 | 2 | 3, kno
   const lines = [k.title];
   if (warning) lines.push(`⚠️ ${warning}`);
   if (known.name) lines.push(`Name: ${known.name}`);
-  if (known.phone) lines.push(`Mobile: ${known.phone}`);
+  if (known.phone) lines.push(`Contact: ${known.phone}`);
   const prompts = {
     1: ["Step 1 of 3 — What's your full name?", "Full name"],
-    2: ["Step 2 of 3 — What's your mobile number? (e.g. 0917 123 4567)", "Mobile number"],
+    2: ["Step 2 of 3 — Your mobile number or Telegram username (e.g. 0917 123 4567 or @yourname)", "Mobile or @username"],
     3: ['Step 3 of 3 — Your business page (Facebook or Shopee link). Type "skip" if you don\'t have one.', "Link or skip"],
   } as const;
   lines.push(prompts[step][0]);
@@ -153,7 +162,7 @@ function parseStep(text: string): { kind: Kind; step: number; name?: string; pho
   const step = text.match(/Step (\d) of 3/);
   if (!kind || !step) return null;
   const field = (label: string) => text.match(new RegExp(`^${label}: (.+)$`, "m"))?.[1]?.trim();
-  return { kind, step: Number(step[1]), name: field("Name"), phone: field("Mobile") };
+  return { kind, step: Number(step[1]), name: field("Name"), phone: field("Contact") };
 }
 
 async function showSection(token: string, b: BrandBot, msg: TgMessage, section: string) {
@@ -211,19 +220,24 @@ export async function handleUpdate(b: BrandBot, token: string, update: TgUpdate)
       return askStep(token, msg.chat.id, kind, 2, { name: text });
     }
     if (state.step === 2) {
-      if (!isValidPhone(text))
-        return askStep(token, msg.chat.id, kind, 2, { name: state.name }, "That doesn't look like a PH mobile number.");
-      return askStep(token, msg.chat.id, kind, 3, { name: state.name, phone: text });
+      const contact = parseContact(text);
+      if (!contact)
+        return askStep(token, msg.chat.id, kind, 2, { name: state.name }, "Enter a PH mobile number or a Telegram username.");
+      return askStep(token, msg.chat.id, kind, 3, { name: state.name, phone: contact });
     }
     if (state.step === 3) {
       const page = /^skip$/i.test(text) ? "" : text.slice(0, 500);
-      const ok = await submitLead({ name: state.name ?? "", phone: state.phone ?? "", page, interest: KINDS[kind].interest });
+      // Always keep the applicant's Telegram handle so staff can reach them there too.
+      const handle = msg.from?.username ? `@${msg.from.username}` : "";
+      const contact = state.phone ?? "";
+      const phone = handle && contact.toLowerCase() !== handle.toLowerCase() ? `${contact} (TG ${handle})` : contact;
+      const ok = await submitLead({ name: state.name ?? "", phone, page, interest: KINDS[kind].interest });
       if (!ok) {
         return sendText(
           token,
           msg.chat.id,
           "Sorry, we couldn't save your application right now. Please try again in a few minutes, or message our team.",
-          [[{ text: "💬 Message our team", url: b.links.messenger }], [back]],
+          [[{ text: "💬 Message our team", url: b.links.team }], [back]],
         );
       }
       const link = kind === "wholesale" ? b.links.wholesale : b.links.retail;

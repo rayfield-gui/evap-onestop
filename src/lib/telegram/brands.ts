@@ -1,5 +1,4 @@
 import { SHOPEE_STORE } from "@/lib/products";
-import { MESSENGER_URL } from "@/lib/site";
 import type { BrandBot } from "./bot";
 
 export const BOTS: Record<string, BrandBot> = {
@@ -14,7 +13,7 @@ export const BOTS: Record<string, BrandBot> = {
       retail: "https://t.me/+SMe-JQ-Qk5M4ZWI1",
       shopee: SHOPEE_STORE,
       website: "https://evap-onestop.vercel.app",
-      messenger: MESSENGER_URL,
+      team: "https://t.me/PhanterSociety",
     },
   },
 };
