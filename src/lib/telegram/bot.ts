@@ -6,8 +6,8 @@ export type BrandBot = {
   name: string;
   emoji: string;
   heart: string;
-  // First line of the 21+ check, e.g. "Welcome to The Luxora Court."
-  welcome: string;
+  // The community name used in the greeting, e.g. "Court" for "Welcome sa The Luxora Court, Boss!"
+  circle: string;
   tokenEnv: string;
   // Telegram chat ID that receives new-application alerts (get it by sending /myid to the bot).
   adminChatId?: number;
@@ -24,18 +24,35 @@ export type BrandBot = {
 
 type Kind = "wholesale" | "retail";
 
-const KINDS: Record<Kind, { title: string; interest: LeadInterest; channelLabel: string; blurb: string }> = {
+// The titles and the "Step N of 3" / "Name:" / "Contact:" markers are parsed back from
+// the user's reply (see parseStep), so keep them stable when editing the copy.
+const KINDS: Record<Kind, { title: string; interest: LeadInterest; channelLabel: string; blurb: (brand: string) => string[] }> = {
   wholesale: {
     title: "📦 Wholesale application",
     interest: "Wholesale",
-    channelLabel: "📦 Join Wholesale channel",
-    blurb: "For shops, distributors and bulk buyers: wholesale prices, current stock, minimum orders and restock alerts.",
+    channelLabel: "📦 Sumali sa Wholesale channel",
+    blurb: () => [
+      `Para sa shops, distributors at bulk buyers.`,
+      ``,
+      `Pagkapasok mo, makukuha mo ang:`,
+      `• Wholesale price list`,
+      `• Current stock at minimum order quantity`,
+      `• Restock alerts — ikaw ang unang makakaalam`,
+    ],
   },
   retail: {
     title: "🛍️ Retail & Affiliate application",
     interest: "Reseller/Affliates",
-    channelLabel: "🛍️ Join Retail & Affiliate channel",
-    blurb: "For resellers and affiliates: new drops, promos, and how to earn with us.",
+    channelLabel: "🛍️ Sumali sa Retail & Affiliate channel",
+    blurb: (brand) => [
+      `Para sa resellers at affiliates na gustong kumita kasama ang ${brand}.`,
+      ``,
+      `Pagkapasok mo, makukuha mo ang:`,
+      `• Bagong drops bago pa sa iba`,
+      `• Promos na puwede mong i-share sa buyers mo`,
+      `• Product photos at info para sa selling`,
+      `• Updates sa affiliate program`,
+    ],
   },
 };
 
@@ -80,45 +97,56 @@ const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 
 function menuKeyboard(b: BrandBot): Keyboard {
   const shop: Button[] = [];
-  if (b.links.shopee) shop.push({ text: "🛒 Shop on Shopee", url: b.links.shopee });
+  if (b.links.shopee) shop.push({ text: "🛒 Shopee", url: b.links.shopee });
   if (b.links.website) shop.push({ text: "🌐 Website", url: b.links.website });
   return [
-    [{ text: "🏷️ SRP – price list", callback_data: "srp" }],
+    [{ text: "🏷️ SRP – Price List", callback_data: "srp" }],
     [{ text: "📦 Wholesale", callback_data: "apply:wholesale" }],
     [{ text: "🛍️ Retail & Affiliate", callback_data: "apply:retail" }],
     ...(shop.length ? [shop] : []),
-    [{ text: "💬 Talk to our team", url: b.links.team }],
+    [{ text: "💬 Kausapin ang Team", url: b.links.team }],
   ];
 }
 
-const back: Button = { text: "⬅️ Back to menu", callback_data: "menu" };
+const back: Button = { text: "⬅️ Balik sa menu", callback_data: "menu" };
 
 function menuText(b: BrandBot) {
   return [
-    `You're in. ${b.heart}`,
+    `<b>Pasok ka na, Boss!</b> ${b.heart}`,
     ``,
-    `Tell me what you're here for and I'll point you to the right room:`,
+    `Ano ang hanap mo ngayon? Piliin lang sa baba at ituturo kita sa tamang channel:`,
     ``,
-    `🏷️ <b>SRP</b> – our price list${b.links.shopee ? ", then shop on Shopee" : ""}`,
-    `📦 <b>Wholesale</b> – bulk prices and stock lists <i>(quick application)</i>`,
-    `🛍️ <b>Retail &amp; Affiliate</b> – resell or earn with ${esc(b.name)} <i>(quick application)</i>`,
+    `🏷️ <b>SRP – Price List</b>`,
+    `Official na presyo ng bawat product at flavor.${b.links.shopee ? " Diretso ka nang mag-order sa Shopee store namin." : ""}`,
+    ``,
+    `📦 <b>Wholesale</b>`,
+    `Para sa shops, distributors at bulk buyers: wholesale prices, stock list, minimum order at restock alerts. <i>May maikling application (3 tanong lang).</i>`,
+    ``,
+    `🛍️ <b>Retail &amp; Affiliate</b>`,
+    `Para sa gustong mag-resell o kumita bilang affiliate ng ${esc(b.name)}: bagong drops, promos at selling materials. <i>May maikling application (3 tanong lang).</i>`,
+    ``,
+    `💬 May tanong o special order? Pindutin ang <b>Kausapin ang Team</b>.`,
   ].join("\n");
 }
 
 function ageText(b: BrandBot) {
   return [
-    `${b.emoji} <b>${esc(b.welcome)}</b>`,
+    `${b.emoji} <b>Welcome sa The ${esc(b.name)} ${esc(b.circle)}, Boss!</b>`,
     ``,
-    `Before we let you in, one quick question:`,
-    `are you <b>21 years old or above</b>?`,
+    `Ako ang official concierge ng ${esc(b.name)}. Ako ang gagabay sa'yo papunta sa tamang channel, price list man, wholesale, o pagiging reseller.`,
+    ``,
+    `Bago tayo tumuloy, isang mabilis na tanong lang:`,
+    `<b>21 years old ka na ba o pataas?</b>`,
+    ``,
+    `<i>Para sa adults 21+ lang ang lahat ng channels namin.</i>`,
   ].join("\n");
 }
 
 function ageKeyboard(next: string): Keyboard {
   return [
     [
-      { text: "✅ Yes, I'm 21+", callback_data: `age:yes:${next}` },
-      { text: "❌ No", callback_data: "age:no" },
+      { text: "✅ Oo, 21+ na ako", callback_data: `age:yes:${next}` },
+      { text: "❌ Hindi pa", callback_data: "age:no" },
     ],
   ];
 }
@@ -151,9 +179,9 @@ function askStep(token: string, chatId: number, kind: Kind, step: 1 | 2 | 3, kno
   if (known.name) lines.push(`Name: ${known.name}`);
   if (known.phone) lines.push(`Contact: ${known.phone}`);
   const prompts = {
-    1: ["Step 1 of 3 — What's your full name?", "Full name"],
-    2: ["Step 2 of 3 — Your mobile number or Telegram username (e.g. 0917 123 4567 or @yourname)", "Mobile or @username"],
-    3: ['Step 3 of 3 — Your business page (Facebook or Shopee link). Type "skip" if you don\'t have one.', "Link or skip"],
+    1: ["Step 1 of 3 — Ano ang buong pangalan mo, Boss?", "Buong pangalan"],
+    2: ["Step 2 of 3 — Mobile number o Telegram username mo? (hal. 0917 123 4567 o @username)", "Mobile o @username"],
+    3: ['Step 3 of 3 — Link ng business page mo (Facebook o Shopee). Kung wala pa, i-type lang ang "skip".', "Link o skip"],
   } as const;
   lines.push(prompts[step][0]);
   return tg(token, "sendMessage", {
@@ -173,19 +201,28 @@ function parseStep(text: string): { kind: Kind; step: number; name?: string; pho
 
 async function showSection(token: string, b: BrandBot, msg: TgMessage, section: string) {
   if (section === "srp") {
-    const keyboard: Keyboard = [[{ text: "🏷️ Join SRP channel", url: b.links.srp }]];
-    if (b.links.shopee) keyboard.push([{ text: "🛒 Shop on Shopee", url: b.links.shopee }]);
+    const keyboard: Keyboard = [[{ text: "🏷️ Sumali sa SRP channel", url: b.links.srp }]];
+    if (b.links.shopee) keyboard.push([{ text: "🛒 Mag-order sa Shopee", url: b.links.shopee }]);
     keyboard.push([back]);
+    const howTo = b.links.shopee
+      ? [
+          `1. Sumali sa SRP channel at silipin ang presyo at flavor`,
+          `2. Mag-checkout sa official Shopee store namin`,
+          `3. Piliin ang variation na tugma sa flavor mo`,
+          ``,
+          `Walang kaba, Boss: Shopee ang bahala sa bayad at delivery mo.`,
+        ]
+      : [`Sumali sa SRP channel para sa presyo, tapos i-message ang team namin para sa order mo.`];
     return editText(
       token,
       msg,
       [
-        `🏷️ <b>${esc(b.name)} SRP</b>`,
+        `🏷️ <b>${esc(b.name)} SRP – Official Price List</b>`,
         ``,
-        `Our official suggested retail prices for every product and flavor.`,
-        b.links.shopee
-          ? `Join the channel for the latest price list, then order on our Shopee store.`
-          : `Join the channel for the latest price list and how to order.`,
+        `Dito mo makikita ang suggested retail price (SRP) ng bawat product at flavor namin, pati bagong flavors, restock at promos.`,
+        ``,
+        `🛒 <b>Paano umorder?</b>`,
+        ...howTo,
       ].join("\n"),
       keyboard,
     );
@@ -195,7 +232,14 @@ async function showSection(token: string, b: BrandBot, msg: TgMessage, section: 
     await editText(
       token,
       msg,
-      [`<b>${KINDS[kind].title}</b>`, ``, KINDS[kind].blurb, ``, `Answer 3 quick questions and I'll send you the channel link.`].join("\n"),
+      [
+        `<b>${KINDS[kind].title}</b>`,
+        ``,
+        ...KINDS[kind].blurb(esc(b.name)),
+        ``,
+        `Sagutin lang ang <b>3 mabilis na tanong</b>, Boss, at ibibigay ko agad ang link ng channel.`,
+        `🔒 Ang team lang namin ang makakakita ng sagot mo.`,
+      ].join("\n"),
       [[back]],
     );
     return askStep(token, msg.chat.id, kind, 1, {});
@@ -238,7 +282,11 @@ export async function handleUpdate(b: BrandBot, token: string, update: TgUpdate)
     await tg(token, "answerCallbackQuery", { callback_query_id: cb.id });
     const data = cb.data ?? "";
     if (data === "age:no") {
-      return editText(token, cb.message, `Sorry, our channels are for adults 21 and above only. Come back when you're of age. ${b.emoji}`);
+      return editText(
+        token,
+        cb.message,
+        `Pasensya na, Boss. Para sa 21 years old pataas lang ang channels namin. Balik ka na lang kapag nasa tamang edad ka na. ${b.emoji}`,
+      );
     }
     if (data.startsWith("age:yes")) {
       const next = data.split(":").slice(2).join(":") || "menu";
@@ -260,17 +308,24 @@ export async function handleUpdate(b: BrandBot, token: string, update: TgUpdate)
   if (state) {
     const { kind } = state;
     if (state.step === 1) {
-      if (text.length < 2 || text.length > 80) return askStep(token, msg.chat.id, kind, 1, {}, "Please enter your full name.");
+      if (text.length < 2 || text.length > 80) return askStep(token, msg.chat.id, kind, 1, {}, "Pakilagay ang buong pangalan mo, Boss.");
       return askStep(token, msg.chat.id, kind, 2, { name: text });
     }
     if (state.step === 2) {
       const contact = parseContact(text);
       if (!contact)
-        return askStep(token, msg.chat.id, kind, 2, { name: state.name }, "Enter a PH mobile number or a Telegram username.");
+        return askStep(
+          token,
+          msg.chat.id,
+          kind,
+          2,
+          { name: state.name },
+          "Hindi ko nabasa 'yan, Boss. Maglagay ng PH mobile number (hal. 0917 123 4567) o Telegram username (hal. @username).",
+        );
       return askStep(token, msg.chat.id, kind, 3, { name: state.name, phone: contact });
     }
     if (state.step === 3) {
-      const page = /^skip$/i.test(text) ? "" : text.slice(0, 500);
+      const page = /^(skip|wala|none)$/i.test(text) ? "" : text.slice(0, 500);
       // Always keep the applicant's Telegram handle so staff can reach them there too.
       const handle = msg.from?.username ? `@${msg.from.username}` : "";
       const contact = state.phone ?? "";
@@ -280,8 +335,8 @@ export async function handleUpdate(b: BrandBot, token: string, update: TgUpdate)
         return sendText(
           token,
           msg.chat.id,
-          "Sorry, we couldn't save your application right now. Please try again in a few minutes, or message our team.",
-          [[{ text: "💬 Message our team", url: b.links.team }], [back]],
+          "Pasensya na, Boss, hindi na-save ang application mo ngayon. Subukan ulit pagkalipas ng ilang minuto, o i-message diretso ang team namin.",
+          [[{ text: "💬 I-message ang Team", url: b.links.team }], [back]],
         );
       }
       await notifyAdmin(b, token, {
@@ -296,7 +351,15 @@ export async function handleUpdate(b: BrandBot, token: string, update: TgUpdate)
       return sendText(
         token,
         msg.chat.id,
-        [`✅ <b>Thanks, ${esc(state.name ?? "")}!</b>`, ``, `You're all set. Tap below to join the channel. Our team may also reach out to your number.`].join("\n"),
+        [
+          `✅ <b>Salamat, ${esc(state.name ?? "")}! Pasok ka na, Boss.</b>`,
+          ``,
+          `Natanggap na ng team namin ang application mo. Pindutin ang button sa baba para sumali sa channel.`,
+          ``,
+          `📌 Pagkapasok, basahin muna ang <b>"Sistema Natin"</b> sa pinned posts. Nandoon ang buong proseso ng order, bayad at delivery.`,
+          ``,
+          `Puwede ka ring i-message o tawagan ng team namin para i-verify ang details mo.`,
+        ].join("\n"),
         [[{ text: KINDS[kind].channelLabel, url: link }], [back]],
       );
     }

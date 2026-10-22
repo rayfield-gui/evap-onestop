@@ -7,7 +7,7 @@ export const BOTS: Record<string, BrandBot> = {
     name: "Phanter",
     emoji: "🐆",
     heart: "🖤",
-    welcome: "Good evening, and welcome to The Phanter Society.",
+    circle: "Society",
     tokenEnv: "TELEGRAM_BOT_TOKEN_PHANTER",
     adminChatId: 8654100792, // @PhanterSociety
     links: {
@@ -24,7 +24,7 @@ export const BOTS: Record<string, BrandBot> = {
     name: "Luxora",
     emoji: "🦀",
     heart: "🤍",
-    welcome: "Welcome to The Luxora Court.",
+    circle: "Court",
     tokenEnv: "TELEGRAM_BOT_TOKEN_LUXORA",
     adminChatId: 8654100792, // @PhanterSociety
     links: {
@@ -41,7 +41,7 @@ export const BOTS: Record<string, BrandBot> = {
     name: "Aerovox",
     emoji: "🦁",
     heart: "🖤",
-    welcome: "Welcome to The Aerovox Pride.",
+    circle: "Pride",
     tokenEnv: "TELEGRAM_BOT_TOKEN_AEROVOX",
     adminChatId: 8654100792, // @PhanterSociety
     links: {
