@@ -31,6 +31,8 @@ export const BOTS: Record<string, BrandBot> = {
       srp: "https://t.me/+uLj3KsGvUtFmYzM1",
       wholesale: "https://t.me/+cXfZlhQ0V78yZDg1",
       retail: "https://t.me/+tegegD2z9d01MTY9",
+      shopee: "https://shopee.ph/astrionzodiac#product_list",
+      website: "https://evap-luxora.vercel.app",
       team: "https://t.me/PhanterSociety",
     },
   },
